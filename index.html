@@ -311,9 +311,11 @@ return;
 
 list.forEach(t=>{
 const row=document.createElement("div");
-row.className="bg-slate-800 p-4 rounded-lg flex justify-between gap-3";
+row.className="bg-slate-800 p-4 rounded-lg flex justify-between items-center gap-3";
 
 const left=document.createElement("div");
+left.className="min-w-0 flex-1";
+
 const title=document.createElement("strong");
 title.textContent=(t.symbol||"İşlem")+" · "+t.direction;
 
@@ -328,12 +330,59 @@ note.textContent=t.notes||"";
 left.append(title,detail,note);
 
 const right=document.createElement("div");
-right.className="font-bold text-sm "+(Number(t.result)>=0?"green":"red");
-right.textContent=money(Number(t.result||0));
+right.className="flex flex-col items-end gap-2 shrink-0";
 
+const amount=document.createElement("div");
+amount.className="font-bold text-sm "+(Number(t.result)>=0?"green":"red");
+amount.textContent=money(Number(t.result||0));
+
+const deleteBtn=document.createElement("button");
+deleteBtn.type="button";
+deleteBtn.textContent="🗑️ Sil";
+deleteBtn.className="bg-red-700 hover:bg-red-600 text-white text-xs px-3 py-2 rounded-lg";
+deleteBtn.onclick=()=>deleteTrade(t.id);
+
+right.append(amount,deleteBtn);
 row.append(left,right);
 box.appendChild(row);
 });
+}
+
+// İŞLEM SİLME
+
+async function deleteTrade(tradeId){
+if(!tradeId){
+alert("İşlem kimliği bulunamadı.");
+return;
+}
+
+const approved=confirm("Bu işlemi silmek istediğine emin misin?\n\nBu işlem kalıcı olarak silinecek.");
+if(!approved)return;
+
+const {data:{user},error:userError}=await db.auth.getUser();
+
+if(userError||!user){
+alert("Oturum bulunamadı. Tekrar giriş yap.");
+return;
+}
+
+const {error}=await db.from("trades")
+.delete()
+.eq("id",tradeId)
+.eq("user_id",user.id);
+
+if(error){
+alert("İşlem silinemedi: "+error.message);
+return;
+}
+
+allTrades=allTrades.filter(t=>String(t.id)!==String(tradeId));
+
+renderCalendar();
+renderDaily();
+renderStats();
+
+alert("İşlem başarıyla silindi!");
 }
 
 function renderStats(){
