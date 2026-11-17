@@ -10,7 +10,7 @@
 <style>
 body{background:#080d18;color:#e5e7eb}
 .panel{background:#111827;border:1px solid #263244;border-radius:14px}
-.day{background:#111827;border:1px solid #263244;border-radius:9px;min-height:85px;padding:8px;cursor:pointer;transition:.15s}
+.day{background:#111827;border:1px solid #263244;border-radius:9px;min-height:85px;padding:8px;cursor:pointer}
 .day:hover{border-color:#64748b;background:#192438}
 .day.selected{border:2px solid #60a5fa}
 .day.profit{background:#10271f}
@@ -44,6 +44,46 @@ button{cursor:pointer}
 
 <main id="app" class="hidden">
 
+<!-- HESAP YÖNETİMİ -->
+<section class="panel p-4 mb-5">
+<div class="flex justify-between items-center mb-4">
+<div>
+<h2 class="font-bold text-lg">💼 Hesaplarım</h2>
+<p class="text-xs text-slate-400">Hesaplarını ayrı ayrı yönet</p>
+</div>
+<button onclick="toggleAccountForm()" class="bg-blue-600 px-4 py-2 rounded-lg text-sm">+ Hesap Ekle</button>
+</div>
+
+<div class="mb-4">
+<label class="text-xs text-slate-400">Aktif hesap</label>
+<select id="accountSelect" class="mt-2" onchange="selectAccount(this.value)"></select>
+</div>
+
+<div id="accountDetails" class="bg-slate-800 rounded-lg p-4 mb-3">
+<p class="text-xs text-slate-400">Seçili hesap bakiyesi</p>
+<div class="flex justify-between items-center gap-3 mt-2">
+<strong id="accountBalance" class="text-2xl">$0.00</strong>
+<div class="flex gap-2">
+<button onclick="editAccount()" class="bg-blue-700 px-3 py-2 rounded-lg text-xs">Düzenle</button>
+<button onclick="deleteAccount()" class="bg-red-700 px-3 py-2 rounded-lg text-xs">Sil</button>
+</div>
+</div>
+</div>
+
+<div id="accountForm" class="hidden border border-slate-700 rounded-lg p-4 mt-3">
+<h3 id="accountFormTitle" class="font-bold mb-3">Yeni Hesap</h3>
+<label class="text-xs text-slate-400">Hesap adı</label>
+<input id="accountName" placeholder="Örn. FTMO" class="mt-2 mb-3">
+<label class="text-xs text-slate-400">Hesap bakiyesi ($)</label>
+<input id="accountBalanceInput" type="number" min="0" step="any" placeholder="100000" class="mt-2">
+<div class="flex gap-2 mt-4">
+<button onclick="saveAccount()" class="bg-blue-600 px-5 py-2 rounded-lg">Kaydet</button>
+<button onclick="closeAccountForm()" class="bg-slate-700 px-5 py-2 rounded-lg">İptal</button>
+</div>
+<p id="accountMsg" class="text-sm mt-3"></p>
+</div>
+</section>
+
 <section class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
 <div class="panel p-4">
 <p class="text-slate-400 text-xs">Toplam Kâr / Zarar</p>
@@ -64,13 +104,11 @@ button{cursor:pointer}
 </section>
 
 <section class="panel p-4 mb-5">
-<div class="flex flex-col md:flex-row gap-3 md:items-end justify-between">
 <div>
-<label class="text-xs text-slate-400">Hesap bakiyesi ($) – yüzde hesabı için</label>
-<input id="balance" type="number" min="0" step="any" placeholder="Örn. 10000" class="mt-2 md:w-64">
+<label class="text-xs text-slate-400">Seçili hesabın bakiyesi ($)</label>
+<input id="balance" type="number" min="0" step="any" class="mt-2 md:w-64">
 </div>
-<button onclick="saveBalance()" class="bg-blue-600 px-5 py-3 rounded-lg">Bakiyeyi Kaydet</button>
-</div>
+<button onclick="saveBalance()" class="bg-blue-600 px-5 py-3 rounded-lg mt-3">Bakiyeyi Kaydet</button>
 <p class="text-xs text-slate-500 mt-2">Günlük yüzde = Günlük net sonuç / hesap bakiyesi × 100</p>
 </section>
 
@@ -124,18 +162,15 @@ button{cursor:pointer}
 
 <div id="noteEditor" contenteditable="true"
 class="bg-slate-950 border border-slate-700 rounded-lg p-4 min-h-96 outline-none"
-style="min-height:350px;line-height:1.8"
-data-placeholder="Bugünkü piyasa analizini, işlemlerini, hatalarını ve düşüncelerini buraya yaz...">
+style="min-height:350px;line-height:1.8">
 </div>
-
-<p class="text-xs text-slate-500 mt-2">
-Fotoğraf yapıştırabilir veya yükleyebilirsin. Değişiklikler otomatik kaydedilecek.
-</p>
+<p class="text-xs text-slate-500 mt-2">Fotoğraf yapıştırabilir veya yükleyebilirsin. Değişiklikler otomatik kaydedilecek.</p>
 </section>
 
 <section id="tradeForm" class="panel p-5 mb-8 hidden">
-<h3 class="font-bold text-lg mb-4">Yeni İşlem</h3>
+<h3 id="tradeFormTitle" class="font-bold text-lg mb-4">Yeni İşlem</h3>
 <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+<div><label class="text-xs text-slate-400">İşlem hesabı</label><select id="tradeAccount"></select></div>
 <div><label class="text-xs text-slate-400">Enstrüman</label><input id="symbol" placeholder="BTCUSDT, XAUUSD..."></div>
 <div><label class="text-xs text-slate-400">Yön</label>
 <select id="direction"><option>Long</option><option>Short</option></select>
@@ -146,7 +181,7 @@ Fotoğraf yapıştırabilir veya yükleyebilirsin. Değişiklikler otomatik kayd
 <div><label class="text-xs text-slate-400">Not</label><input id="notes" placeholder="İşlem açıklaması"></div>
 </div>
 <div class="flex gap-2 mt-5">
-<button onclick="addTrade()" class="bg-blue-600 px-6 py-3 rounded-lg">Kaydet</button>
+<button id="tradeSaveBtn" onclick="saveTrade()" class="bg-blue-600 px-6 py-3 rounded-lg">Kaydet</button>
 <button onclick="closeForm()" class="bg-slate-700 px-6 py-3 rounded-lg">İptal</button>
 </div>
 <p id="tradeMsg" class="text-sm mt-3"></p>
@@ -159,12 +194,15 @@ Fotoğraf yapıştırabilir veya yükleyebilirsin. Değişiklikler otomatik kayd
 const SUPABASE_URL="https://kpomcxbdfkdjglbuurlj.supabase.co";
 const SUPABASE_KEY="sb_publishable_pDlu9-L7mp7yL7bUsXtQCg_RY4uONyA";
 const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
-
 const $=id=>document.getElementById(id);
 
 let currentMonth=new Date();
 let selectedDate=localDate(new Date());
 let allTrades=[];
+let accounts=[];
+let activeAccountId=null;
+let editingTradeId=null;
+let editingAccountId=null;
 let noteSaveTimer;
 
 function localDate(d){
@@ -175,25 +213,21 @@ function money(n){
 return (n<0?"-":"")+"$"+Math.abs(n).toFixed(2);
 }
 
-function showMessage(id,msg){
-$(id).textContent=msg;
-}
+function showMessage(id,msg){$(id).textContent=msg;}
 
 async function login(){
 const {error}=await db.auth.signInWithPassword({
-email:$("email").value,
-password:$("password").value
+email:$("email").value,password:$("password").value
 });
 showMessage("authMsg",error?error.message:"Giriş başarılı");
-if(!error) await showApp();
+if(!error)await showApp();
 }
 
 async function signup(){
 const {error}=await db.auth.signUp({
-email:$("email").value,
-password:$("password").value
+email:$("email").value,password:$("password").value
 });
-showMessage("authMsg",error?error.message:"Kayıt işlemi başarılı. E-postanı kontrol et.");
+showMessage("authMsg",error?error.message:"Kayıt başarılı. E-postanı kontrol et.");
 }
 
 async function logout(){
@@ -205,26 +239,239 @@ async function showApp(){
 $("auth").classList.add("hidden");
 $("app").classList.remove("hidden");
 $("logout").classList.remove("hidden");
-$("balance").value=localStorage.getItem("tradeBalance")||"";
+
+await loadAccounts();
 await loadTrades();
 await loadDailyNote();
 }
 
-async function saveBalance(){
-const n=Number($("balance").value);
-if(n<=0){alert("Geçerli bir hesap bakiyesi gir.");return;}
-localStorage.setItem("tradeBalance",n);
-renderCalendar();
-renderDaily();
+// HESAPLAR
+
+async function loadAccounts(){
+const {data,error}=await db.from("trade_accounts")
+.select("*").order("created_at");
+
+if(error){
+alert("Hesaplar yüklenemedi: "+error.message);
+return;
 }
 
-async function loadTrades(){
-const {data,error}=await db.from("trades").select("*").order("created_at");
-if(error){alert("İşlemler yüklenemedi: "+error.message);return;}
-allTrades=data||[];
+accounts=data||[];
+
+if(!accounts.length){
+const {data:{user}}=await db.auth.getUser();
+if(!user)return;
+
+const {data:created,error:createError}=await db.from("trade_accounts")
+.insert({user_id:user.id,name:"Ana Hesap",balance:0})
+.select().single();
+
+if(createError){
+alert("Ana hesap oluşturulamadı: "+createError.message);
+return;
+}
+accounts=[created];
+}
+
+if(!accounts.some(a=>String(a.id)===String(activeAccountId))){
+activeAccountId=String(accounts[0].id);
+}
+
+renderAccounts();
+}
+
+function renderAccounts(){
+const select=$("accountSelect");
+select.innerHTML="";
+
+accounts.forEach(a=>{
+const option=document.createElement("option");
+option.value=a.id;
+option.textContent=a.name;
+select.appendChild(option);
+});
+
+select.value=activeAccountId;
+
+const active=accounts.find(a=>String(a.id)===String(activeAccountId));
+if(!active)return;
+
+$("accountBalance").textContent=money(Number(active.balance||0));
+$("balance").value=active.balance??0;
+
+const tradeSelect=$("tradeAccount");
+tradeSelect.innerHTML="";
+accounts.forEach(a=>{
+const option=document.createElement("option");
+option.value=a.id;
+option.textContent=a.name;
+tradeSelect.appendChild(option);
+});
+tradeSelect.value=activeAccountId;
+}
+
+async function selectAccount(id){
+activeAccountId=id;
+renderAccounts();
 renderCalendar();
 renderDaily();
 renderStats();
+await loadDailyNote();
+}
+
+function toggleAccountForm(){
+editingAccountId=null;
+$("accountName").value="";
+$("accountBalanceInput").value="";
+$("accountFormTitle").textContent="Yeni Hesap Ekle";
+$("accountForm").classList.remove("hidden");
+showMessage("accountMsg","");
+}
+
+function editAccount(){
+const a=accounts.find(x=>String(x.id)===String(activeAccountId));
+if(!a)return;
+
+editingAccountId=a.id;
+$("accountName").value=a.name;
+$("accountBalanceInput").value=a.balance??0;
+$("accountFormTitle").textContent="Hesabı Düzenle";
+$("accountForm").classList.remove("hidden");
+}
+
+function closeAccountForm(){
+$("accountForm").classList.add("hidden");
+editingAccountId=null;
+}
+
+async function saveAccount(){
+const name=$("accountName").value.trim();
+const balance=$("accountBalanceInput").value;
+
+if(!name||balance===""){
+showMessage("accountMsg","Hesap adı ve bakiye gir.");
+return;
+}
+
+const {data:{user}}=await db.auth.getUser();
+if(!user)return;
+
+let error;
+
+if(editingAccountId){
+const response=await db.from("trade_accounts")
+.update({name,balance:Number(balance)})
+.eq("id",editingAccountId)
+.eq("user_id",user.id);
+error=response.error;
+}else{
+const response=await db.from("trade_accounts")
+.insert({user_id:user.id,name,balance:Number(balance)})
+.select().single();
+
+error=response.error;
+if(!error){
+activeAccountId=String(response.data.id);
+}
+}
+
+if(error){
+showMessage("accountMsg","Hata: "+error.message);
+return;
+}
+
+closeAccountForm();
+await loadAccounts();
+renderCalendar();
+renderDaily();
+renderStats();
+}
+
+async function saveBalance(){
+const balance=Number($("balance").value);
+if(balance<=0){alert("Geçerli bir bakiye gir.");return;}
+
+const {data:{user}}=await db.auth.getUser();
+if(!user)return;
+
+const {error}=await db.from("trade_accounts")
+.update({balance})
+.eq("id",activeAccountId)
+.eq("user_id",user.id);
+
+if(error){alert("Bakiye kaydedilemedi: "+error.message);return;}
+
+await loadAccounts();
+renderCalendar();
+renderDaily();
+alert("Bakiye kaydedildi!");
+}
+
+async function deleteAccount(){
+const account=accounts.find(a=>String(a.id)===String(activeAccountId));
+if(!account)return;
+
+if(accounts.length<=1){
+alert("Son hesabını silemezsin. En az bir hesap bulunmalı.");
+return;
+}
+
+const hasTrades=allTrades.some(t=>String(t.account_id)===String(activeAccountId));
+
+if(hasTrades){
+alert("Bu hesapta işlemler bulunuyor. İşlemlerini başka hesaba taşımadan bu hesabı silemezsin.");
+return;
+}
+
+if(!confirm(account.name+" hesabını silmek istediğine emin misin?"))return;
+
+const {data:{user}}=await db.auth.getUser();
+
+const {error}=await db.from("trade_accounts")
+.delete()
+.eq("id",activeAccountId)
+.eq("user_id",user.id);
+
+if(error){alert("Hesap silinemedi: "+error.message);return;}
+
+activeAccountId=null;
+await loadAccounts();
+renderCalendar();
+renderDaily();
+renderStats();
+}
+
+// İŞLEMLER
+
+async function loadTrades(){
+const {data,error}=await db.from("trades").select("*").order("created_at");
+
+if(error){alert("İşlemler yüklenemedi: "+error.message);return;}
+
+allTrades=data||[];
+
+const unassigned=allTrades.filter(t=>!t.account_id);
+
+if(unassigned.length){
+const defaultAccount=accounts[0];
+if(defaultAccount){
+const {error:updateError}=await db.from("trades")
+.update({account_id:defaultAccount.id})
+.in("id",unassigned.map(t=>t.id));
+
+if(!updateError){
+unassigned.forEach(t=>t.account_id=defaultAccount.id);
+}
+}
+}
+
+renderCalendar();
+renderDaily();
+renderStats();
+}
+
+function getAccountTrades(){
+return allTrades.filter(t=>String(t.account_id)===String(activeAccountId));
 }
 
 function changeMonth(n){
@@ -235,12 +482,13 @@ renderCalendar();
 function renderCalendar(){
 const y=currentMonth.getFullYear(),m=currentMonth.getMonth();
 $("monthTitle").textContent=currentMonth.toLocaleDateString("tr-TR",{month:"long",year:"numeric"});
+
 const first=new Date(y,m,1);
 const offset=(first.getDay()+6)%7;
 const days=new Date(y,m+1,0).getDate();
 const groups={};
 
-allTrades.forEach(t=>{
+getAccountTrades().forEach(t=>{
 const day=String(t.created_at).slice(0,10);
 groups[day]=(groups[day]||0)+Number(t.result||0);
 });
@@ -248,9 +496,7 @@ groups[day]=(groups[day]||0)+Number(t.result||0);
 const cal=$("calendar");
 cal.innerHTML="";
 
-for(let i=0;i<offset;i++){
-cal.appendChild(document.createElement("div"));
-}
+for(let i=0;i<offset;i++)cal.appendChild(document.createElement("div"));
 
 for(let d=1;d<=days;d++){
 const key=localDate(new Date(y,m,d));
@@ -271,7 +517,7 @@ value.className="text-xs font-bold mt-2 "+(amount>=0?"green":"red");
 value.textContent=money(amount);
 cell.appendChild(value);
 
-const balance=Number($("balance").value||localStorage.getItem("tradeBalance")||0);
+const balance=Number($("balance").value||0);
 if(balance>0){
 const pct=document.createElement("div");
 pct.className="text-xs mt-1 "+(amount>=0?"green":"red");
@@ -292,12 +538,13 @@ cal.appendChild(cell);
 }
 
 function renderDaily(){
-$("selectedDate").textContent=new Date(selectedDate+"T12:00:00").toLocaleDateString("tr-TR",{day:"numeric",month:"long",year:"numeric"});
+$("selectedDate").textContent=new Date(selectedDate+"T12:00:00")
+.toLocaleDateString("tr-TR",{day:"numeric",month:"long",year:"numeric"});
 
-const list=allTrades.filter(t=>String(t.created_at).slice(0,10)===selectedDate);
+const list=getAccountTrades().filter(t=>String(t.created_at).slice(0,10)===selectedDate);
 const total=list.reduce((s,t)=>s+Number(t.result||0),0);
-const balance=Number($("balance").value||localStorage.getItem("tradeBalance")||0);
-const pct=balance>0?(total/balance*100):null;
+const balance=Number($("balance").value||0);
+const pct=balance>0?total/balance*100:null;
 
 $("dailySummary").textContent=`Günlük sonuç: ${money(total)}${pct===null?"":" | "+pct.toFixed(2)+"%"} | ${list.length} işlem`;
 
@@ -305,7 +552,7 @@ const box=$("tradeList");
 box.innerHTML="";
 
 if(!list.length){
-box.textContent="Bu gün için henüz işlem yok.";
+box.textContent="Bu hesapta bu gün için henüz işlem yok.";
 return;
 }
 
@@ -330,65 +577,33 @@ note.textContent=t.notes||"";
 left.append(title,detail,note);
 
 const right=document.createElement("div");
-right.className="flex flex-col items-end gap-2 shrink-0";
+right.className="flex flex-wrap items-center justify-end gap-2 shrink-0";
 
 const amount=document.createElement("div");
 amount.className="font-bold text-sm "+(Number(t.result)>=0?"green":"red");
 amount.textContent=money(Number(t.result||0));
 
+const editBtn=document.createElement("button");
+editBtn.textContent="✏️ Düzenle";
+editBtn.className="bg-blue-700 text-white text-xs px-3 py-2 rounded-lg";
+editBtn.onclick=()=>editTrade(t.id);
+
 const deleteBtn=document.createElement("button");
-deleteBtn.type="button";
 deleteBtn.textContent="🗑️ Sil";
-deleteBtn.className="bg-red-700 hover:bg-red-600 text-white text-xs px-3 py-2 rounded-lg";
+deleteBtn.className="bg-red-700 text-white text-xs px-3 py-2 rounded-lg";
 deleteBtn.onclick=()=>deleteTrade(t.id);
 
-right.append(amount,deleteBtn);
+right.append(amount,editBtn,deleteBtn);
 row.append(left,right);
 box.appendChild(row);
 });
 }
 
-// İŞLEM SİLME
-
-async function deleteTrade(tradeId){
-if(!tradeId){
-alert("İşlem kimliği bulunamadı.");
-return;
-}
-
-const approved=confirm("Bu işlemi silmek istediğine emin misin?\n\nBu işlem kalıcı olarak silinecek.");
-if(!approved)return;
-
-const {data:{user},error:userError}=await db.auth.getUser();
-
-if(userError||!user){
-alert("Oturum bulunamadı. Tekrar giriş yap.");
-return;
-}
-
-const {error}=await db.from("trades")
-.delete()
-.eq("id",tradeId)
-.eq("user_id",user.id);
-
-if(error){
-alert("İşlem silinemedi: "+error.message);
-return;
-}
-
-allTrades=allTrades.filter(t=>String(t.id)!==String(tradeId));
-
-renderCalendar();
-renderDaily();
-renderStats();
-
-alert("İşlem başarıyla silindi!");
-}
-
 function renderStats(){
-const total=allTrades.reduce((s,t)=>s+Number(t.result||0),0);
-const wins=allTrades.filter(t=>Number(t.result)>0).length;
-const count=allTrades.length;
+const trades=getAccountTrades();
+const total=trades.reduce((s,t)=>s+Number(t.result||0),0);
+const wins=trades.filter(t=>Number(t.result)>0).length;
+const count=trades.length;
 
 $("total").textContent=money(total);
 $("total").className="text-2xl font-bold mt-2 "+(total>=0?"green":"red");
@@ -398,46 +613,120 @@ $("winrate").textContent="%"+(count?((wins/count)*100).toFixed(1):"0");
 }
 
 function openForm(){
+editingTradeId=null;
+["symbol","entry","exit","result","notes"].forEach(id=>$(id).value="");
+$("direction").value="Long";
+$("tradeAccount").value=activeAccountId;
+$("tradeFormTitle").textContent="Yeni İşlem";
+$("tradeSaveBtn").textContent="Kaydet";
+showMessage("tradeMsg","");
 $("tradeForm").classList.remove("hidden");
-$("symbol").focus();
+$("tradeForm").scrollIntoView({behavior:"smooth",block:"center"});
 }
 
 function closeForm(){
 $("tradeForm").classList.add("hidden");
+editingTradeId=null;
 }
 
-async function addTrade(){
+function editTrade(id){
+const t=allTrades.find(x=>String(x.id)===String(id));
+if(!t)return;
+
+editingTradeId=t.id;
+$("tradeAccount").value=t.account_id||activeAccountId;
+$("symbol").value=t.symbol||"";
+$("direction").value=t.direction||"Long";
+$("entry").value=t.entry??"";
+$("exit").value=t.exit??"";
+$("result").value=t.result??"";
+$("notes").value=t.notes||"";
+
+$("tradeFormTitle").textContent="İşlemi Düzenle";
+$("tradeSaveBtn").textContent="Güncelle";
+showMessage("tradeMsg","");
+$("tradeForm").classList.remove("hidden");
+$("tradeForm").scrollIntoView({behavior:"smooth",block:"center"});
+}
+
+async function saveTrade(){
 const symbol=$("symbol").value.trim();
 const result=$("result").value;
+const accountId=$("tradeAccount").value;
 
 if(!symbol||result===""){
 showMessage("tradeMsg","Enstrüman ve kâr/zarar alanlarını doldur.");
 return;
 }
 
-const {data:{user}}=await db.auth.getUser();
-if(!user){showMessage("tradeMsg","Oturum bulunamadı.");return;}
+if(!accountId){
+showMessage("tradeMsg","Önce bir hesap oluştur.");
+return;
+}
 
-const {error}=await db.from("trades").insert({
-user_id:user.id,
+const {data:{user},error:userError}=await db.auth.getUser();
+if(userError||!user){showMessage("tradeMsg","Oturum bulunamadı.");return;}
+
+const tradeData={
+account_id:accountId,
 symbol,
 direction:$("direction").value,
 entry:$("entry").value===""?null:Number($("entry").value),
 exit:$("exit").value===""?null:Number($("exit").value),
 result:Number(result),
-notes:$("notes").value,
+notes:$("notes").value
+};
+
+let error;
+
+if(editingTradeId!==null){
+const response=await db.from("trades")
+.update(tradeData)
+.eq("id",editingTradeId)
+.eq("user_id",user.id);
+error=response.error;
+}else{
+const response=await db.from("trades").insert({
+user_id:user.id,
+...tradeData,
 created_at:selectedDate+"T12:00:00"
 });
+error=response.error;
+}
 
 if(error){
-showMessage("tradeMsg",error.message);
+showMessage("tradeMsg","Kayıt hatası: "+error.message);
 return;
 }
 
+activeAccountId=accountId;
 ["symbol","entry","exit","result","notes"].forEach(id=>$(id).value="");
-showMessage("tradeMsg","İşlem kaydedildi!");
+
 closeForm();
 await loadTrades();
+renderAccounts();
+alert(editingTradeId===null?"İşlem kaydedildi!":"İşlem güncellendi!");
+editingTradeId=null;
+}
+
+async function deleteTrade(id){
+if(!confirm("Bu işlemi kalıcı olarak silmek istediğine emin misin?"))return;
+
+const {data:{user}}=await db.auth.getUser();
+if(!user){alert("Oturum bulunamadı.");return;}
+
+const {error}=await db.from("trades")
+.delete()
+.eq("id",id)
+.eq("user_id",user.id);
+
+if(error){alert("Silme hatası: "+error.message);return;}
+
+allTrades=allTrades.filter(t=>String(t.id)!==String(id));
+renderCalendar();
+renderDaily();
+renderStats();
+alert("İşlem silindi!");
 }
 
 // GÜNLÜK NOTLAR
@@ -461,8 +750,7 @@ updated_at:new Date().toISOString()
 },{onConflict:"user_id,note_date"});
 
 $("noteStatus").textContent=error?"Kayıt hatası!":"Kaydedildi ✓";
-
-if(error)console.error("Not kaydetme hatası:",error);
+if(error)console.error(error);
 }
 
 function scheduleNoteSave(){
@@ -487,7 +775,7 @@ const {data,error}=await db.from("daily_notes")
 
 if(error){
 $("noteStatus").textContent="Yükleme hatası!";
-console.error("Not yükleme hatası:",error);
+console.error(error);
 return;
 }
 
@@ -517,11 +805,7 @@ if(!files||!files.length)return;
 
 try{
 const {data:{user},error:userError}=await db.auth.getUser();
-
-if(userError||!user){
-alert("Oturum bulunamadı. Lütfen tekrar giriş yap.");
-return;
-}
+if(userError||!user){alert("Tekrar giriş yap.");return;}
 
 for(const file of Array.from(files)){
 if(!file.type.startsWith("image/"))continue;
@@ -531,21 +815,14 @@ const path=`${user.id}/${selectedDate}/${crypto.randomUUID()}-${safeName}`;
 
 $("noteStatus").textContent="Fotoğraf yükleniyor...";
 
-const {error}=await db.storage
-.from("daily-notes")
-.upload(path,file);
-
-if(error){
-alert("Fotoğraf yüklenemedi: "+error.message);
-continue;
-}
+const {error}=await db.storage.from("daily-notes").upload(path,file);
+if(error){alert("Fotoğraf yüklenemedi: "+error.message);continue;}
 
 const {data:signed,error:signedError}=await db.storage
-.from("daily-notes")
-.createSignedUrl(path,3600);
+.from("daily-notes").createSignedUrl(path,3600);
 
 if(signedError||!signed?.signedUrl){
-alert("Fotoğraf yüklendi fakat görüntüleme bağlantısı alınamadı: "+(signedError?.message||"Bilinmeyen hata"));
+alert("Fotoğraf bağlantısı alınamadı: "+(signedError?.message||"Bilinmeyen hata"));
 continue;
 }
 
@@ -559,16 +836,13 @@ $("noteEditor").appendChild(document.createElement("br"));
 }
 
 scheduleNoteSave();
-
 }catch(error){
-console.error("Fotoğraf yükleme hatası:",error);
-alert("Bir hata oluştu: "+error.message);
+console.error(error);
+alert("Fotoğraf yükleme hatası: "+error.message);
 }finally{
 $("noteImages").value="";
 }
 }
-
-// NOT DÜZENLEME VE FOTOĞRAF YAPIŞTIRMA
 
 $("noteEditor").addEventListener("input",scheduleNoteSave);
 
@@ -597,7 +871,7 @@ const {data,error}=await db.auth.getSession();
 if(error)throw error;
 if(data.session)await showApp();
 }catch(error){
-console.error("Oturum kontrolü hatası:",error);
+console.error("Oturum hatası:",error);
 }
 }
 
