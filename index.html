@@ -112,6 +112,53 @@ button{cursor:pointer}
 <p class="text-xs text-slate-500 mt-2">Günlük yüzde = Günlük net sonuç / hesap bakiyesi × 100</p>
 </section>
 
+  
+<!-- TRADINGVIEW GRAFİK -->
+<section class="panel p-4 mb-5">
+  <div class="flex justify-between items-center mb-4">
+    <div>
+      <h2 class="font-bold text-lg">📈 TradingView Grafik</h2>
+      <p class="text-xs text-slate-400">Canlı piyasa grafikleri</p>
+    </div>
+    <span class="text-xs text-green-400">TradingView</span>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+    <div>
+      <label class="text-xs text-slate-400">Enstrüman</label>
+      <input id="tvSymbol" value="OANDA:XAUUSD">
+    </div>
+    <div>
+      <label class="text-xs text-slate-400">Zaman dilimi</label>
+      <select id="tvInterval">
+        <option value="1">1 Dakika</option>
+        <option value="5" selected>5 Dakika</option>
+        <option value="15">15 Dakika</option>
+        <option value="30">30 Dakika</option>
+        <option value="60">1 Saat</option>
+        <option value="240">4 Saat</option>
+        <option value="D">1 Gün</option>
+        <option value="W">1 Hafta</option>
+      </select>
+    </div>
+    <div class="flex items-end">
+      <button onclick="loadTradingViewChart()"
+        class="bg-blue-600 p-3 rounded-lg w-full">
+        Grafiği Aç
+      </button>
+    </div>
+  </div>
+
+  <div id="tvChart"
+    class="w-full rounded-lg overflow-hidden bg-slate-950"
+    style="height:550px">
+    <div class="h-full flex items-center justify-center text-slate-400">
+      Grafiği açmak için butona bas.
+    </div>
+  </div>
+</section>
+<!-- TRADINGVIEW GRAFİK SONU -->
+
 <section class="panel p-4 mb-5">
 <div class="flex justify-between items-center mb-4">
 <button onclick="changeMonth(-1)" class="bg-slate-800 px-4 py-2 rounded-lg">←</button>
