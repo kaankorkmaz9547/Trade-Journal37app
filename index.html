@@ -3,151 +3,304 @@
 <html lang="tr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Trade Journal</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.tailwindcss.com"></script>
+<style>
+body{background:#080d18;color:#e5e7eb}
+.panel{background:#111827;border:1px solid #263244;border-radius:14px}
+.day{background:#111827;border:1px solid #263244;border-radius:9px;min-height:85px;padding:8px;cursor:pointer;transition:.15s}
+.day:hover{border-color:#64748b;background:#192438}
+.day.selected{border:2px solid #60a5fa}
+.day.profit{background:#10271f}
+.day.loss{background:#2a171c}
+input,select,textarea{background:#0b1220!important;border:1px solid #334155!important;color:white!important;border-radius:8px;padding:10px;width:100%}
+button{cursor:pointer}
+.green{color:#4ade80}.red{color:#fb7185}
+</style>
 </head>
-<body class="bg-slate-950 text-white min-h-screen p-5">
+<body class="min-h-screen p-3 md:p-6">
 
-<div class="max-w-4xl mx-auto">
-    <h1 class="text-3xl font-bold mb-2">Trade Journal</h1>
-    <p class="text-slate-400 mb-8">Trading performance tracker</p>
+<div class="max-w-6xl mx-auto">
+<header class="flex justify-between items-center mb-7">
+ <div>
+  <h1 class="text-2xl md:text-3xl font-bold">TRADE JOURNAL</h1>
+  <p class="text-slate-400 text-sm mt-1">Trading Performance Dashboard</p>
+ </div>
+ <button id="logout" onclick="logout()" class="hidden bg-red-900 px-4 py-2 rounded-lg text-sm">Çıkış</button>
+</header>
 
-    <div id="auth" class="bg-slate-900 p-6 rounded-xl max-w-md">
-        <h2 class="text-xl font-bold mb-4">Hesabına Giriş Yap</h2>
-        <input id="email" type="email" placeholder="E-posta"
-        class="w-full p-3 mb-3 rounded bg-slate-800">
-        <input id="password" type="password" placeholder="Şifre"
-        class="w-full p-3 mb-4 rounded bg-slate-800">
-        <button onclick="login()" class="bg-blue-600 p-3 rounded w-full mb-2">Giriş Yap</button>
-        <button onclick="signup()" class="bg-slate-700 p-3 rounded w-full">Kayıt Ol</button>
-        <p id="message" class="mt-4 text-sm text-slate-300"></p>
-    </div>
+<div id="auth" class="panel max-w-md mx-auto p-6 mt-12">
+ <h2 class="text-xl font-bold mb-5">Hesabına giriş yap</h2>
+ <input id="email" type="email" placeholder="E-posta" class="mb-3">
+ <input id="password" type="password" placeholder="Şifre" class="mb-4">
+ <button onclick="login()" class="w-full bg-blue-600 p-3 rounded-lg mb-2">Giriş Yap</button>
+ <button onclick="signup()" class="w-full bg-slate-700 p-3 rounded-lg">Kayıt Ol</button>
+ <p id="authMsg" class="text-sm mt-4 text-amber-300"></p>
+</div>
 
-    <div id="app" class="hidden">
-        <div class="flex justify-between items-center mb-6">
-            <h2 class="text-xl font-bold">İşlem Günlüğüm</h2>
-            <button onclick="logout()" class="bg-red-600 px-4 py-2 rounded">Çıkış</button>
-        </div>
+<main id="app" class="hidden">
+ <section class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+  <div class="panel p-4">
+   <p class="text-slate-400 text-xs">Toplam Kâr / Zarar</p>
+   <p id="total" class="text-2xl font-bold mt-2">$0.00</p>
+  </div>
+  <div class="panel p-4">
+   <p class="text-slate-400 text-xs">Win Rate</p>
+   <p id="winrate" class="text-2xl font-bold mt-2">%0</p>
+  </div>
+  <div class="panel p-4">
+   <p class="text-slate-400 text-xs">Toplam İşlem</p>
+   <p id="count" class="text-2xl font-bold mt-2">0</p>
+  </div>
+  <div class="panel p-4">
+   <p class="text-slate-400 text-xs">Kazanılan İşlem</p>
+   <p id="wins" class="text-2xl font-bold mt-2">0</p>
+  </div>
+ </section>
 
-        <div class="bg-slate-900 p-5 rounded-xl mb-6">
-            <h3 class="font-bold mb-4">Yeni İşlem Ekle</h3>
-            <input id="symbol" placeholder="Parite / Enstrüman"
-            class="w-full p-3 mb-3 rounded bg-slate-800">
-            <select id="direction" class="w-full p-3 mb-3 rounded bg-slate-800">
-                <option value="Long">Long</option>
-                <option value="Short">Short</option>
-            </select>
-            <input id="entry" type="number" step="any" placeholder="Giriş fiyatı"
-            class="w-full p-3 mb-3 rounded bg-slate-800">
-            <input id="exit" type="number" step="any" placeholder="Çıkış fiyatı"
-            class="w-full p-3 mb-3 rounded bg-slate-800">
-            <input id="result" type="number" step="any" placeholder="Kâr / Zarar ($)"
-            class="w-full p-3 mb-3 rounded bg-slate-800">
-            <textarea id="notes" placeholder="İşlem notları"
-            class="w-full p-3 mb-3 rounded bg-slate-800"></textarea>
-            <button onclick="addTrade()" class="bg-blue-600 p-3 rounded w-full">İşlemi Kaydet</button>
-            <p id="tradeMessage" class="mt-3 text-sm"></p>
-        </div>
+ <section class="panel p-4 mb-5">
+  <div class="flex flex-col md:flex-row gap-3 md:items-end justify-between">
+   <div>
+    <label class="text-xs text-slate-400">Hesap bakiyesi ($) – yüzde hesabı için</label>
+    <input id="balance" type="number" min="0" step="any" placeholder="Örn. 10000" class="mt-2 md:w-64">
+   </div>
+   <button onclick="saveBalance()" class="bg-blue-600 px-5 py-3 rounded-lg">Bakiyeyi Kaydet</button>
+  </div>
+  <p class="text-xs text-slate-500 mt-2">Günlük yüzde = Günlük net sonuç / hesap bakiyesi × 100</p>
+ </section>
 
-        <div class="bg-slate-900 p-5 rounded-xl">
-            <h3 class="font-bold mb-4">Geçmiş İşlemler</h3>
-            <div id="trades" class="space-y-3"></div>
-        </div>
-    </div>
+ <section class="panel p-4 mb-5">
+  <div class="flex justify-between items-center mb-4">
+   <button onclick="changeMonth(-1)" class="bg-slate-800 px-4 py-2 rounded-lg">←</button>
+   <h2 id="monthTitle" class="text-lg font-bold"></h2>
+   <button onclick="changeMonth(1)" class="bg-slate-800 px-4 py-2 rounded-lg">→</button>
+  </div>
+  <div class="grid grid-cols-7 gap-1 mb-2 text-center text-xs text-slate-400">
+   <div>Pzt</div><div>Sal</div><div>Çar</div><div>Per</div><div>Cum</div><div>Cmt</div><div>Paz</div>
+  </div>
+  <div id="calendar" class="grid grid-cols-7 gap-1"></div>
+  <div class="flex gap-4 mt-4 text-xs text-slate-400">
+   <span class="green">● Kâr</span><span class="red">● Zarar</span><span>● İşlemsiz gün</span>
+  </div>
+ </section>
+
+ <section class="panel p-4 mb-5">
+  <div class="flex justify-between items-center mb-4">
+   <div>
+    <h2 class="font-bold text-lg">Günlük İşlemler</h2>
+    <p id="selectedDate" class="text-sm text-slate-400"></p>
+   </div>
+   <button onclick="openForm()" class="bg-blue-600 px-4 py-2 rounded-lg text-sm">+ İşlem Ekle</button>
+  </div>
+  <div id="dailySummary" class="mb-4 text-sm text-slate-400"></div>
+  <div id="tradeList" class="space-y-3"></div>
+ </section>
+
+ <section id="tradeForm" class="panel p-5 mb-8 hidden">
+  <h3 class="font-bold text-lg mb-4">Yeni İşlem</h3>
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+   <div><label class="text-xs text-slate-400">Enstrüman</label><input id="symbol" placeholder="BTCUSDT, XAUUSD..."></div>
+   <div><label class="text-xs text-slate-400">Yön</label>
+    <select id="direction"><option>Long</option><option>Short</option></select>
+   </div>
+   <div><label class="text-xs text-slate-400">Giriş fiyatı</label><input id="entry" type="number" step="any"></div>
+   <div><label class="text-xs text-slate-400">Çıkış fiyatı</label><input id="exit" type="number" step="any"></div>
+   <div><label class="text-xs text-slate-400">Net Kâr / Zarar ($)</label><input id="result" type="number" step="any" placeholder="Örn. 150 veya -50"></div>
+   <div><label class="text-xs text-slate-400">Not</label><input id="notes" placeholder="İşlem açıklaması"></div>
+  </div>
+  <div class="flex gap-2 mt-5">
+   <button onclick="addTrade()" class="bg-blue-600 px-6 py-3 rounded-lg">Kaydet</button>
+   <button onclick="closeForm()" class="bg-slate-700 px-6 py-3 rounded-lg">İptal</button>
+  </div>
+  <p id="tradeMsg" class="text-sm mt-3"></p>
+ </section>
+</main>
 </div>
 
 <script>
-const SUPABASE_URL = "https://kpomcxbdfkdjglbuurlj.supabase.co";
-const SUPABASE_KEY = "sb_publishable_pDlu9-L7mp7yL7bUsXtQCg_RY4uONyA";
+const SUPABASE_URL="https://kpomcxbdfkdjglbuurlj.supabase.co";
+const SUPABASE_KEY="sb_publishable_pDlu9-L7mp7yL7bUsXtQCg_RY4uONyA";
+const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
-const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const $=id=>document.getElementById(id);
+let currentMonth=new Date();
+let selectedDate=localDate(new Date());
+let allTrades=[];
 
-async function login() {
-    const {error} = await db.auth.signInWithPassword({
-        email: email.value,
-        password: password.value
-    });
-    message.textContent = error ? error.message : "Giriş başarılı!";
-    if (!error) showApp();
+function localDate(d){
+ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
 }
-
-async function signup() {
-    const {error} = await db.auth.signUp({
-        email: email.value,
-        password: password.value
-    });
-    message.textContent = error ? error.message : "Kayıt başarılı! E-postanı kontrol et.";
+function money(n){
+ return (n<0?"-":"")+"$"+Math.abs(n).toFixed(2);
 }
-
-async function logout() {
-    await db.auth.signOut();
-    location.reload();
+function showMessage(id,msg){
+ $(id).textContent=msg;
 }
-
-async function showApp() {
-    auth.classList.add("hidden");
-    app.classList.remove("hidden");
-    await loadTrades();
+async function login(){
+ const {error}=await db.auth.signInWithPassword({
+  email:$("email").value,password:$("password").value
+ });
+ showMessage("authMsg",error?error.message:"Giriş başarılı");
+ if(!error) await showApp();
 }
-
-async function addTrade() {
-    const {data: {user}} = await db.auth.getUser();
-    if (!user) return;
-
-    const {error} = await db.from("trades").insert({
-        user_id: user.id,
-        symbol: symbol.value,
-        direction: direction.value,
-        entry: Number(entry.value),
-        exit: Number(exit.value),
-        result: Number(result.value),
-        notes: notes.value
-    });
-
-    tradeMessage.textContent = error ? error.message : "İşlem kaydedildi!";
-    if (!error) {
-        symbol.value = "";
-        entry.value = "";
-        exit.value = "";
-        result.value = "";
-        notes.value = "";
-        await loadTrades();
-    }
+async function signup(){
+ const {error}=await db.auth.signUp({
+  email:$("email").value,password:$("password").value
+ });
+ showMessage("authMsg",error?error.message:"Kayıt işlemi başarılı. E-postanı kontrol et.");
 }
-
-async function loadTrades() {
-    const {data, error} = await db.from("trades")
-        .select("*").order("created_at", {ascending:false});
-
-    if (error) {
-        trades.textContent = error.message;
-        return;
-    }
-
-    trades.innerHTML = "";
-    data.forEach(t => {
-        const item = document.createElement("div");
-        item.className = "bg-slate-800 p-4 rounded-lg";
-        const heading = document.createElement("strong");
-        heading.textContent = `${t.symbol} - ${t.direction}`;
-        const details = document.createElement("p");
-        details.className = "text-slate-300 mt-2";
-        details.textContent = `Giriş: ${t.entry} | Çıkış: ${t.exit} | Sonuç: ${t.result}$`;
-        const note = document.createElement("p");
-        note.className = "text-slate-400 mt-2";
-        note.textContent = t.notes || "";
-        item.append(heading, details, note);
-        trades.appendChild(item);
-    });
+async function logout(){
+ await db.auth.signOut();
+ location.reload();
 }
-
-async function checkSession() {
-    const {data} = await db.auth.getSession();
-    if (data.session) showApp();
+async function showApp(){
+ $("auth").classList.add("hidden");
+ $("app").classList.remove("hidden");
+ $("logout").classList.remove("hidden");
+ $("balance").value=localStorage.getItem("tradeBalance")||"";
+ await loadTrades();
 }
-
+async function saveBalance(){
+ const n=Number($("balance").value);
+ if(n<=0){alert("Geçerli bir hesap bakiyesi gir.");return;}
+ localStorage.setItem("tradeBalance",n);
+ renderCalendar();
+ renderDaily();
+}
+async function loadTrades(){
+ const {data,error}=await db.from("trades").select("*").order("created_at");
+ if(error){alert("İşlemler yüklenemedi: "+error.message);return;}
+ allTrades=data||[];
+ renderCalendar();
+ renderDaily();
+ renderStats();
+}
+function changeMonth(n){
+ currentMonth.setMonth(currentMonth.getMonth()+n);
+ renderCalendar();
+}
+function renderCalendar(){
+ const y=currentMonth.getFullYear(),m=currentMonth.getMonth();
+ $("monthTitle").textContent=currentMonth.toLocaleDateString("tr-TR",{month:"long",year:"numeric"});
+ const first=new Date(y,m,1);
+ const offset=(first.getDay()+6)%7;
+ const days=new Date(y,m+1,0).getDate();
+ const groups={};
+ allTrades.forEach(t=>{
+  const day=String(t.created_at).slice(0,10);
+  groups[day]=(groups[day]||0)+Number(t.result||0);
+ });
+ const cal=$("calendar");
+ cal.innerHTML="";
+ for(let i=0;i<offset;i++){
+  const blank=document.createElement("div");
+  cal.appendChild(blank);
+ }
+ for(let d=1;d<=days;d++){
+  const key=localDate(new Date(y,m,d));
+  const amount=groups[key]||0;
+  const has=Object.prototype.hasOwnProperty.call(groups,key);
+  const cell=document.createElement("button");
+  cell.className="day"+(has?(amount>=0?" profit":" loss"):"")+(key===selectedDate?" selected":"");
+  const number=document.createElement("div");
+  number.className="text-xs text-slate-400";
+  number.textContent=d;
+  cell.appendChild(number);
+  if(has){
+   const value=document.createElement("div");
+   value.className="text-xs font-bold mt-2 "+(amount>=0?"green":"red");
+   value.textContent=money(amount);
+   cell.appendChild(value);
+   const balance=Number($("balance").value||localStorage.getItem("tradeBalance")||0);
+   if(balance>0){
+    const pct=document.createElement("div");
+    pct.className="text-xs mt-1 "+(amount>=0?"green":"red");
+    pct.textContent=(amount/balance*100).toFixed(2)+"%";
+    cell.appendChild(pct);
+   }
+  }
+  cell.onclick=()=>{selectedDate=key;renderCalendar();renderDaily();};
+  cal.appendChild(cell);
+ }
+}
+function renderDaily(){
+ $("selectedDate").textContent=new Date(selectedDate+"T12:00:00").toLocaleDateString("tr-TR",{day:"numeric",month:"long",year:"numeric"});
+ const list=allTrades.filter(t=>String(t.created_at).slice(0,10)===selectedDate);
+ const total=list.reduce((s,t)=>s+Number(t.result||0),0);
+ const balance=Number($("balance").value||localStorage.getItem("tradeBalance")||0);
+ const pct=balance>0?(total/balance*100):null;
+ $("dailySummary").textContent=`Günlük sonuç: ${money(total)}${pct===null?"":" | "+pct.toFixed(2)+"%"} | ${list.length} işlem`;
+ const box=$("tradeList");
+ box.innerHTML="";
+ if(!list.length){box.textContent="Bu gün için henüz işlem yok.";return;}
+ list.forEach(t=>{
+  const row=document.createElement("div");
+  row.className="bg-slate-800 p-4 rounded-lg flex justify-between gap-3";
+  const left=document.createElement("div");
+  const title=document.createElement("strong");
+  title.textContent=(t.symbol||"İşlem")+" · "+t.direction;
+  const detail=document.createElement("p");
+  detail.className="text-xs text-slate-400 mt-2";
+  detail.textContent=`Giriş: ${t.entry??"-"} | Çıkış: ${t.exit??"-"}`;
+  const note=document.createElement("p");
+  note.className="text-xs text-slate-400 mt-1";
+  note.textContent=t.notes||"";
+  left.append(title,detail,note);
+  const right=document.createElement("div");
+  right.className="font-bold text-sm "+(Number(t.result)>=0?"green":"red");
+  right.textContent=money(Number(t.result||0));
+  row.append(left,right);
+  box.appendChild(row);
+ });
+}
+function renderStats(){
+ const total=allTrades.reduce((s,t)=>s+Number(t.result||0),0);
+ const wins=allTrades.filter(t=>Number(t.result)>0).length;
+ const count=allTrades.length;
+ $("total").textContent=money(total);
+ $("total").className="text-2xl font-bold mt-2 "+(total>=0?"green":"red");
+ $("count").textContent=count;
+ $("wins").textContent=wins;
+ $("winrate").textContent="%"+(count?((wins/count)*100).toFixed(1):"0");
+}
+function openForm(){
+ $("tradeForm").classList.remove("hidden");
+ $("symbol").focus();
+}
+function closeForm(){
+ $("tradeForm").classList.add("hidden");
+}
+async function addTrade(){
+ const symbol=$("symbol").value.trim();
+ const result=$("result").value;
+ if(!symbol||result===""){
+  showMessage("tradeMsg","Enstrüman ve kâr/zarar alanlarını doldur.");
+  return;
+ }
+ const {data:{user}}=await db.auth.getUser();
+ if(!user){showMessage("tradeMsg","Oturum bulunamadı.");return;}
+ const {error}=await db.from("trades").insert({
+  user_id:user.id,
+  symbol,
+  direction:$("direction").value,
+  entry:$("entry").value===""?null:Number($("entry").value),
+  exit:$("exit").value===""?null:Number($("exit").value),
+  result:Number(result),
+  notes:$("notes").value,
+  created_at:selectedDate+"T12:00:00"
+ });
+ if(error){showMessage("tradeMsg",error.message);return;}
+ ["symbol","entry","exit","result","notes"].forEach(id=>$(id).value="");
+ showMessage("tradeMsg","İşlem kaydedildi!");
+ closeForm();
+ await loadTrades();
+}
+async function checkSession(){
+ const {data}=await db.auth.getSession();
+ if(data.session) await showApp();
+}
 checkSession();
 </script>
 </body>
