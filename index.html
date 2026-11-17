@@ -195,6 +195,7 @@ async function showApp(){
  $("logout").classList.remove("hidden");
  $("balance").value=localStorage.getItem("tradeBalance")||"";
  await loadTrades();
+ await loadDailyNote();
 }
 async function saveBalance(){
  const n=Number($("balance").value);
@@ -255,7 +256,12 @@ function renderCalendar(){
     cell.appendChild(pct);
    }
   }
-  cell.onclick=()=>{selectedDate=key;renderCalendar();renderDaily();};
+  cell.onclick=()=>{
+ selectedDate=key;
+ renderCalendar();
+ renderDaily();
+ loadDailyNote();
+};
   cal.appendChild(cell);
  }
 }
@@ -330,6 +336,131 @@ async function addTrade(){
  showMessage("tradeMsg","İşlem kaydedildi!");
  closeForm();
  await loadTrades();
+ 
+let noteSaveTimer;
+
+function formatNote(command, value = null) {
+  $("noteEditor").focus();
+  document.execCommand(command, false, value);
+}
+
+async function saveDailyNote() {
+  const { data: { user } } = await db.auth.getUser();
+  if (!user) return;
+
+  $("noteStatus").textContent = "Kaydediliyor...";
+
+  const { error } = await db.from("daily_notes").upsert({
+    user_id: user.id,
+    note_date: selectedDate,
+    content: $("noteEditor").innerHTML,
+    updated_at: new Date().toISOString()
+  }, { onConflict: "user_id,note_date" });
+
+  $("noteStatus").textContent = error ? "Kayıt hatası!" : "Kaydedildi ✓";
+  if (error) console.error(error);
+}
+
+function scheduleNoteSave() {
+  $("noteStatus").textContent = "Değişiklik var...";
+  clearTimeout(noteSaveTimer);
+  noteSaveTimer = setTimeout(saveDailyNote, 1000);
+}
+
+async function loadDailyNote() {
+  const { data: { user } } = await db.auth.getUser();
+  if (!user) return;
+
+  $("noteEditor").innerHTML = "";
+  $("noteStatus").textContent = "Yükleniyor...";
+
+  const { data, error } = await db.from("daily_notes")
+    .select("content")
+    .eq("user_id", user.id)
+    .eq("note_date", selectedDate)
+    .maybeSingle();
+
+  if (error) {
+    $("noteStatus").textContent = "Yükleme hatası!";
+    console.error(error);
+    return;
+  }
+
+  $("noteEditor").innerHTML = data?.content || "";
+
+  const images = $("noteEditor").querySelectorAll("img[data-path]");
+  for (const img of images) {
+    const { data: signed } = await db.storage
+      .from("daily-notes")
+      .createSignedUrl(img.dataset.path, 3600);
+
+    if (signed?.signedUrl) img.src = signed.signedUrl;
+  }
+
+  $("noteStatus").textContent = "Hazır";
+}
+
+async function uploadNoteImages(files) {
+  const { data: { user } } = await db.auth.getUser();
+  if (!user) return;
+
+  for (const file of files) {
+    if (!file.type.startsWith("image/")) continue;
+
+    const path = `${user.id}/${selectedDate}/${crypto.randomUUID()}-${file.name}`;
+
+    $("noteStatus").textContent = "Fotoğraf yükleniyor...";
+
+    const { error } = await db.storage
+      .from("daily-notes")
+      .upload(path, file);
+
+    if (error) {
+      alert("Fotoğraf yüklenemedi: " + error.message);
+      continue;
+    }
+
+    const { data } = await db.storage
+      .from("daily-notes")
+      .createSignedUrl(path, 3600);
+
+    if (data?.signedUrl) {
+      const img = document.createElement("img");
+      img.src = data.signedUrl;
+      img.dataset.path = path;
+      img.style.maxWidth = "100%";
+      img.style.maxHeight = "500px";
+      img.style.display = "block";
+      img.style.margin = "15px 0";
+
+      $("noteEditor").appendChild(img);
+      $("noteEditor").appendChild(document.createElement("br"));
+    }
+  }
+
+  scheduleNoteSave();
+  $("noteImages").value = "";
+}
+
+$("noteEditor").addEventListener("input", scheduleNoteSave);
+
+$("noteEditor").addEventListener("paste", event => {
+  const items = event.clipboardData?.items || [];
+  const files = [];
+
+  for (const item of items) {
+    if (item.type.startsWith("image/")) {
+      const file = item.getAsFile();
+      if (file) files.push(file);
+    }
+  }
+
+  if (files.length) {
+    event.preventDefault();
+    uploadNoteImages(files);
+  }
+});
+
 }
 async function checkSession(){
  const {data}=await db.auth.getSession();
